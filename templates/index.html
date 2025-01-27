@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLM Assistant</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400&display=swap" rel="stylesheet">
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+        }
+        body {
+            background-color: #f8f9fa;
+            color: #343a40;
+            display: flex;
+            flex-direction: column;
+        }
+        #banner {
+            display: flex;
+            align-items: center;
+            background-color: black;
+            height: 50px;
+            padding: 0 20px;
+        }
+        #banner h1 {
+            color: whitesmoke;
+            font-size: 16px;
+            margin: 0;
+        }
+        #content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 20px;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        .title {
+            font-size: 48px;
+            font-weight: 300;
+            margin-bottom: 40px;
+            color: #343a40;
+        }
+        .response-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .response-card, .question-card {
+            background-color: #ffffff;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #dee2e6;
+            width: 45%;
+        }
+        .question-card {
+            align-self: flex-end;
+            background-color: #e2f0fb;
+            text-align: right;
+        }
+        .response-card {
+            align-self: flex-start;
+            background-color: #e2f0fb;
+            text-align: left;
+        }
+        .loading-dots {
+            display: inline-block;
+            font-size: 24px;
+            color: #17a2b8;
+        }
+        #inputContainer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #d3dae0;
+            padding: 20px;
+            width: 100%;
+            position: fixed;
+            bottom: 0;
+            height: 50px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+        }
+        .input-box {
+            border: none;
+            padding: 10px;
+            width: calc(100% - 40px);
+            height: 100%;
+            font-size: 16px;
+            resize: none;
+            color: #201f1f;
+            background: transparent;
+        }
+        .input-box::placeholder {
+            color: #9e9e9e;
+        }
+        .input-box:focus {
+            outline: none;
+        }
+        .send-icon {
+            font-size: 24px;
+            color: #201f1f;
+            margin-left: -30px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="banner">
+        <h1>CLM Assistant</h1>
+    </div>
+    <div id="content">
+        <div class="response-container" id="responseContainer"></div>
+    </div>
+    <div id="inputContainer">
+        <input type="text" class="input-box" placeholder="Enter your Query" id="promptInput">
+        <i class="fas fa-arrow-right send-icon" onclick="sendQuery()"></i>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
+    <script>
+        // Function to send query to FastAPI backend
+        async function sendQuery() {
+            const query = document.getElementById('promptInput').value;
+
+            // If no input, do nothing
+            if (!query.trim()) return;
+
+            // Display user's question
+            addMessage(query, 'question');
+
+            // Clear the input field
+            document.getElementById('promptInput').value = '';
+
+            // Show loading dots
+            const responseContainer = document.getElementById('responseContainer');
+            const loadingElement = document.createElement('div');
+            loadingElement.classList.add('loading-dots');
+            loadingElement.innerText = '...';
+            responseContainer.appendChild(loadingElement);
+
+            // Send POST request to FastAPI
+            try {
+                const response = await fetch('/get_answer', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({ 'question': query }),
+                });
+
+                const data = await response.json();
+
+                // Remove loading dots and show response
+                loadingElement.remove();
+                addMessage(data.answer, 'response');
+            } catch (error) {
+                loadingElement.remove();
+                addMessage('Error occurred while fetching the answer.', 'response');
+            }
+        }
+
+        // Function to add messages to the chat window
+        function addMessage(message, type) {
+            const responseContainer = document.getElementById('responseContainer');
+            const messageCard = document.createElement('div');
+            messageCard.classList.add(type === 'question' ? 'question-card' : 'response-card');
+            messageCard.textContent = message;
+            responseContainer.appendChild(messageCard);
+            responseContainer.scrollTop = responseContainer.scrollHeight;
+        }
+    </script>
+</body>
+</html>
